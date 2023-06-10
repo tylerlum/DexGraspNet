@@ -9,6 +9,7 @@ import sys
 
 sys.path.append(os.path.realpath("."))
 
+import keyboard
 import argparse
 import multiprocessing
 import numpy as np
@@ -251,27 +252,28 @@ def generate(args_list):
 
 
 if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     parser = argparse.ArgumentParser()
     # experiment settings
     parser.add_argument(
         "--hand_model_type",
-        default=HandModelType.SHADOW_HAND,
+        default=HandModelType.ALLEGRO_HAND,
         type=HandModelType.from_string,
         choices=list(HandModelType),
     )
     parser.add_argument("--wandb_name", default="", type=str)
-    parser.add_argument("--visualization_freq", default=2000, type=int)
+    parser.add_argument("--visualization_freq", default=100, type=int)
     parser.add_argument("--result_path", default="../data/graspdata", type=str)
     parser.add_argument("--data_root_path", default="../data/meshdata", type=str)
     parser.add_argument("--object_code_list", nargs="*", type=str)
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--todo", action="store_true")
-    parser.add_argument("--seed", default=1, type=int)
+    parser.add_argument("--seed", default=42, type=int)
     parser.add_argument("--n_contact", default=4, type=int)
     parser.add_argument("--batch_size_each", default=500, type=int)
     parser.add_argument("--max_total_batch_size", default=1000, type=int)
-    parser.add_argument("--n_iter", default=6000, type=int)
+    parser.add_argument("--n_iter", default=2000, type=int)
     # hyper parameters
     parser.add_argument("--switch_possibility", default=0.5, type=float)
     parser.add_argument("--mu", default=0.98, type=float)
@@ -281,11 +283,11 @@ if __name__ == "__main__":
     parser.add_argument("--annealing_period", default=30, type=int)
     parser.add_argument("--temperature_decay", default=0.95, type=float)
     parser.add_argument("--w_fc", default=1.0, type=float)
-    parser.add_argument("--w_dis", default=300.0, type=float)
+    parser.add_argument("--w_dis", default=100.0, type=float)
     parser.add_argument("--w_pen", default=100.0, type=float)
     parser.add_argument("--w_spen", default=100.0, type=float)
     parser.add_argument("--w_joints", default=1.0, type=float)
-    parser.add_argument("--w_ff", default=1.0, type=float)
+    parser.add_argument("--w_ff", default=0.0, type=float)
     parser.add_argument("--w_fp", default=0.0, type=float)
     # initialization settings
     parser.add_argument("--jitter_strength", default=0.1, type=float)
@@ -302,6 +304,12 @@ if __name__ == "__main__":
 
     gpu_list = os.environ["CUDA_VISIBLE_DEVICES"].split(",")
     print(f"gpu_list: {gpu_list}")
+
+    # args.object_code_list = ["core-bowl-708fce7ba7d911f3d5b5e7c77f0efc2"]
+    # args.object_code_list = ["ddg-gd_stapler_poisson_000"]
+    args.object_code_list = ["ddg-gd_watering_can_poisson_001"]
+
+    print(f"HACK: setting object_code_list to {args.object_code_list}")
 
     # check whether arguments are valid and process arguments
     set_seed(args.seed)
