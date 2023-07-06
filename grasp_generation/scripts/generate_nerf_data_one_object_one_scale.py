@@ -54,7 +54,7 @@ def main(args: GenerateNerfDataOneObjectOneScaleArgumentParser):
     )
     sim.save_images(folder=output_nerf_object_path)
     sim.create_train_val_test_split(
-        folder=output_nerf_object_path, train_frac=0.8, val_frac=0.1
+        folder=output_nerf_object_path, train_frac=1.0, val_frac=0.0
     )
     sim.reset_simulator()
     sim.destroy()
