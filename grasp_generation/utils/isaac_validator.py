@@ -955,9 +955,9 @@ class IsaacValidator:
                         "YZ", [-np.pi / 2, -np.pi / 2]
                     ).as_matrix()
                 )
-                if USE_NERF_STUDIO:
+                # if USE_NERF_STUDIO:
                     # new_R = scipy.spatial.transform.Rotation.from_euler("X", [-np.pi/2]).as_matrix()
-                    R = R @ scipy.spatial.transform.Rotation.from_euler("Z", [np.pi]).as_matrix()
+                    # R = R @ scipy.spatial.transform.Rotation.from_euler("Z", [np.pi]).as_matrix()
                     # pos = new_R @ pos
                 transform_mat[:3, :3] = R
                 transform_mat[:3, -1] = pos
