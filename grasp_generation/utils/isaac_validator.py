@@ -63,7 +63,7 @@ def get_fixed_camera_transform(gym, sim, env, camera):
     new_y_axis = side_left_axis
     new_z_axis = up_axis
 
-    rot_matrix = torch.stack([new_x_axis, new_y_axis, new_z_axis], dim=-1)
+    rot_matrix = torch.stack([-new_x_axis, -new_y_axis, new_z_axis], dim=-1)
     fixed_quat = Quaternion.fromMatrix(rot_matrix)
 
     return pos, fixed_quat
