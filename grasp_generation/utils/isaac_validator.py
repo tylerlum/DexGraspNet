@@ -63,7 +63,7 @@ def get_fixed_camera_transform(gym, sim, env, camera):
     new_y_axis = side_left_axis
     new_z_axis = up_axis
 
-    rot_matrix = torch.stack([-new_x_axis, -new_y_axis, new_z_axis], dim=-1)
+    rot_matrix = torch.stack([new_x_axis, new_y_axis, new_z_axis], dim=-1)
     fixed_quat = Quaternion.fromMatrix(rot_matrix)
 
     return pos, fixed_quat
@@ -957,7 +957,7 @@ class IsaacValidator:
                 )
                 if USE_NERF_STUDIO:
                     new_R = scipy.spatial.transform.Rotation.from_euler("X", [-np.pi/2]).as_matrix()
-                    R = new_R @ R
+                    R = new_R @ R @ scipy.spatial.transform.Rotation.from_euler("Z", [np.pi]).as_matrix()
                     pos = new_R @ pos
                 transform_mat[:3, :3] = R
                 transform_mat[:3, -1] = pos
