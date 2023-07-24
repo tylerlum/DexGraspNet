@@ -913,8 +913,8 @@ class IsaacValidator:
     def _create_one_split(self, split_name, split_range, folder):
         import scipy
 
-        USE_TORCH_NGP = True
-        USE_NERF_STUDIO = False
+        USE_TORCH_NGP = False
+        USE_NERF_STUDIO = True
         assert sum([USE_TORCH_NGP, USE_NERF_STUDIO]) == 1
 
         # Sanity check
@@ -955,6 +955,10 @@ class IsaacValidator:
                         "YZ", [-np.pi / 2, -np.pi / 2]
                     ).as_matrix()
                 )
+                if USE_NERF_STUDIO:
+                    new_R = scipy.spatial.transform.Rotation.from_euler("X", [-np.pi/2]).as_matrix()
+                    R = new_R @ R
+                    pos = new_R @ pos
                 transform_mat[:3, :3] = R
                 transform_mat[:3, -1] = pos
 
