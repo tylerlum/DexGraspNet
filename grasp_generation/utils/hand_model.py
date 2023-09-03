@@ -129,6 +129,7 @@ class HandModel:
         self.chain = pk.build_chain_from_urdf(open(urdf_path).read()).to(
             dtype=torch.float, device=device
         )
+
         robot = Robot.from_xml_file(urdf_path)
         self.n_dofs = len(self.chain.get_joint_parameter_names())
 
@@ -272,6 +273,14 @@ class HandModel:
         )
 
         self._sample_surface_points(n_surface_points)
+
+        self.fingertip_serial_chains = [
+            pk.SerialChain(self.chain, f"{link_name}_frame", device=self.device)
+            for link_name in self.mesh
+            if "tip" in link_name
+        ]
+
+        assert len(self.fingertip_serial_chains) == self.num_fingers
 
     def _init_shadow(
         self,
@@ -715,12 +724,18 @@ class HandModel:
 
     def cal_finger_finger_distance_energy(self):
         batch_size = self.contact_points.shape[0]
-        finger_finger_distance_energy = -torch.cdist(self.contact_points, self.contact_points, p=2).reshape(batch_size, -1).sum(dim=-1)
+        finger_finger_distance_energy = (
+            -torch.cdist(self.contact_points, self.contact_points, p=2)
+            .reshape(batch_size, -1)
+            .sum(dim=-1)
+        )
         return finger_finger_distance_energy
 
     def cal_palm_finger_distance_energy(self):
         palm_position = self.global_translation[:, None, :]
-        palm_finger_distance_energy = -(palm_position - self.contact_points).norm(dim=-1).sum(dim=-1)
+        palm_finger_distance_energy = (
+            -(palm_position - self.contact_points).norm(dim=-1).sum(dim=-1)
+        )
         return palm_finger_distance_energy
 
     def get_surface_points(self):
@@ -923,9 +938,7 @@ class HandModel:
             )
 
         if with_penetration_keypoints:
-            penetration_keypoints = (
-                self.get_penetration_keypoints()[i].detach().cpu()
-            )
+            penetration_keypoints = self.get_penetration_keypoints()[i].detach().cpu()
             if pose is not None:
                 penetration_keypoints = (
                     penetration_keypoints @ pose[:3, :3].T + pose[:3, 3]
@@ -993,3 +1006,90 @@ class HandModel:
     @property
     def num_fingers(self) -> int:
         return len(handmodeltype_to_fingerkeywords[self.hand_model_type])
+
+    def inverse_position_kinematics_allegro(
+        self,
+        x_des: torch.tensor,
+        max_iter: int = 100,
+        damping: float = 1e-3,
+        tol: float = 1e-3,
+    ):
+        """
+        Runs IK to find joint angles that achieve the desired fingertip positions.
+        Assumes the hand pose remains unchanged + starts from joint angles stored in self.hand_pose.
+        """
+
+        raise ValueError("likely bug in pk gives incorrect results.")
+        assert x_des.shape == (self.batch_size, self.num_fingers, 3)
+        assert self.hand_model_type == HandModelType.ALLEGRO_HAND
+
+        # Get initial joint angles.
+        q0 = self.hand_pose[:, 9:].clone()
+        assert x_des.device == q0.device == self.device
+
+        # Transform desired fingertip positions to local coordinates.
+        x_des_local = x_des.clone()  # (B, n_fingers, 3)
+        x_des_local = x_des_local @ self.global_rotation.transpose(
+            1, 2
+        ) + self.global_translation.unsqueeze(
+            1
+        )  # Check!
+
+        delta = torch.inf * torch.ones_like(q0)
+        q = q0.clone()
+
+        breakpoint()
+        for i in range(max_iter):
+            # Compute position Jacobians.
+            pos_jacs = [cc.jacobian(q)[:, :3, :] for cc in self.fingertip_serial_chains]
+            full_jac = torch.cat(pos_jacs, dim=1)  # (B, 3 * n_fingers, n_dofs)
+
+            breakpoint()
+
+            # Compute position errors.
+            x = self.get_fingertip_positions_allegro(q)  # (B, n_fingers, 3)
+            x_err = (x_des_local - x).reshape(self.batch_size, -1)  # (B, 3 * n_fingers)
+
+            # Compute joint angle updates.
+            lm_lhs = full_jac.transpose(1, 2) @ full_jac + damping * torch.eye(
+                self.n_dofs, device=self.device
+            ).unsqueeze(0).expand(self.batch_size, -1, -1)
+            lm_rhs = full_jac.transpose(1, 2) @ x_err.unsqueeze(-1)
+
+            delta = torch.linalg.solve(lm_lhs, lm_rhs)[0].squeeze(-1)
+
+            # Update joint angles.
+            q = q + delta
+
+            if torch.linalg.norm(delta) < tol:
+                return q
+
+            print(delta)
+
+        print("hit max iters during IK")
+        return q
+
+    def get_fingertip_positions_allegro(self, q: torch.Tensor):
+        fk_result = self.chain.forward_kinematics(q)
+        fingertip_positions = torch.stack(
+            [
+                fk_result[f"link_{finger_keyword}_tip"].get_matrix()[:, :3, 3]
+                for finger_keyword in handmodeltype_to_fingerkeywords[
+                    self.hand_model_type
+                ]
+            ],
+            dim=1,
+        )
+        return fingertip_positions
+
+
+if __name__ == "__main__":
+    # Instantiate Allegro hand and run IK to the origin.
+    hand = HandModel(HandModelType.ALLEGRO_HAND)
+    init_hand_pose = None
+    q_origin = hand.inverse_position_kinematics_allegro(
+        torch.zeros(1, hand.num_fingers, 3)
+    )
+
+    # Print the fingertip poses with FK from q_origin.
+    x_origin = hand.chain.forward_kinematics(q_origin)[:3]
