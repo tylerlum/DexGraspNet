@@ -57,6 +57,7 @@ class EvalGraspConfigDictArgumentParser(Tap):
     use_gui: bool = False
     use_cpu: bool = False  # NOTE: Tyler has had big discrepancy between using GPU vs CPU, hypothesize that CPU is safer
     penetration_threshold: Optional[float] = 0.001  # From original DGN
+    self_penetration_threshold: Optional[float] = 0.001  # TODO: Tune
     record_indices: List[int] = []
 
 
@@ -205,6 +206,7 @@ def main(args: EvalGraspConfigDictArgumentParser):
     # Run for loop over minibatches of grasps.
     successes = []
     E_pen_array = []
+    E_spen_array = []
     pbar = tqdm(range(math.ceil(batch_size / args.max_grasps_per_batch)))
     for i in pbar:
         start_index = i * args.max_grasps_per_batch
@@ -242,12 +244,17 @@ def main(args: EvalGraspConfigDictArgumentParser):
         )
         E_pen_array.extend(batch_E_pen_array.flatten().tolist())
 
+        batch_E_spen_array = hand_model.cal_self_penetration_energy(reduction="max")
+        E_spen_array.extend(batch_E_spen_array.flatten().tolist())
+
     # Aggregate results
     successes = np.array(successes)
     assert len(successes) == batch_size
     passed_simulation = np.array(successes)
     E_pen_array = np.array(E_pen_array)
     assert len(E_pen_array) == batch_size
+    E_spen_array = np.array(E_spen_array)
+    assert len(E_spen_array) == batch_size
 
     if args.penetration_threshold is None:
         print("WARNING: penetration check skipped")
@@ -255,12 +262,21 @@ def main(args: EvalGraspConfigDictArgumentParser):
     else:
         passed_penetration_threshold = E_pen_array < args.penetration_threshold
 
-    passed_eval = passed_simulation * passed_penetration_threshold
+    if args.self_penetration_threshold is None:
+        print("WARNING: self penetration check skipped")
+        passed_self_penetration_threshold = np.ones(batch_size, dtype=np.bool8)
+    else:
+        passed_self_penetration_threshold = (
+            E_spen_array < args.self_penetration_threshold
+        )
+
+    passed_eval = passed_simulation * passed_penetration_threshold * passed_self_penetration_threshold
     print("=" * 80)
     print(
         f"passed_penetration_threshold: {passed_penetration_threshold.sum().item()}/{batch_size}, "
         f"passed_simulation: {passed_simulation.sum().item()}/{batch_size}, "
-        f"passed_eval = passed_simulation * passed_penetration_threshold: {passed_eval.sum().item()}/{batch_size}"
+        f"passed_self_penetration_threshold: {passed_self_penetration_threshold.sum().item()}/{batch_size}, "
+        f"passed_eval: {passed_eval.sum().item()}/{batch_size}"
     )
     print("=" * 80)
     evaled_grasp_config_dict = {
@@ -269,6 +285,8 @@ def main(args: EvalGraspConfigDictArgumentParser):
         "passed_simulation": passed_simulation,
         "passed_eval": passed_eval,
         "penetration": E_pen_array,
+        "passed_self_penetration_threshold": passed_self_penetration_threshold,
+        "self_penetration": E_spen_array,
     }
 
     args.output_evaled_grasp_config_dicts_path.mkdir(parents=True, exist_ok=True)
