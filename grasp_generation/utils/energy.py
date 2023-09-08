@@ -110,7 +110,7 @@ def _cal_hand_object_penetration(
     if reduction == "sum":
         E_pen = hand_to_object_surface_point_distances.sum(-1)
     elif reduction == "max":
-        E_pen = hand_to_object_surface_point_distances.max(-1)[0]
+        E_pen = hand_to_object_surface_point_distances.max(-1).values
     else:
         raise ValueError(f"Unknown reduction {reduction}")
     return E_pen

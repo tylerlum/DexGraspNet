@@ -654,7 +654,7 @@ class HandModel:
         dis = torch.max(torch.stack(dis, dim=0), dim=0)[0]
         return dis
 
-    def cal_self_penetration_energy(self):
+    def cal_self_penetration_energy(self, reduction="sum"):
         """
         Calculate self penetration energy
 
@@ -701,7 +701,13 @@ class HandModel:
         dis = torch.where(dis < 1e-6, 1e6 * torch.ones_like(dis), dis)
         dis = 0.02 - dis
         E_spen = torch.where(dis > 0, dis, torch.zeros_like(dis))
-        return E_spen.sum((1, 2))
+
+        if reduction == "sum":
+            return E_spen.sum((1, 2))
+        elif reduction == "max":
+            return E_spen.max(-1).values.max(-1).values  # TODO: not sure what shape dis is, should we norm dim=-1?
+        else:
+            raise ValueError(f"Unknown reduction {reduction}")
 
     def cal_joint_limit_energy(self):
         joint_limit_energy = torch.sum(
