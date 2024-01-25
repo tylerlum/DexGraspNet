@@ -25,6 +25,7 @@ from enum import Enum, auto
 from typing import List, Optional, Tuple, Dict
 import transforms3d
 from datetime import datetime
+from live_plotter import LivePlotter
 
 # collision_filter is a bit mask that lets you filter out collision between bodies. Two bodies will not collide if their collision filters have a common bit set.
 HAND_COLLISION_FILTER = 0  # 0 means turn off collisions
@@ -133,7 +134,7 @@ class IsaacValidator:
         mode: str = "direct",
         hand_friction: float = 0.6,
         obj_friction: float = 0.6,
-        num_sim_steps: int = 120,
+        num_sim_steps: int = 1200,
         gpu: int = 0,
         debug_interval: float = 0.05,
         start_with_step_mode: bool = False,
@@ -803,8 +804,25 @@ class IsaacValidator:
         pbar = tqdm(total=self.num_sim_steps, desc=default_desc, dynamic_ncols=True)
 
         hand_not_penetrate_list = [True for _ in range(len(self.envs))]
+        live_plotter = LivePlotter(default_titles=["linear speed", "angular speed"], default_xlabels=["step"], default_ylabels=["m/s", "rad/s"])
+        linear_speeds = []
+        angular_speeds = []
 
         while sim_step_idx < self.num_sim_steps:
+
+            object_indices = self._get_actor_indices(
+                envs=self.envs, actors=self.obj_handles
+            ).to(self.root_state_tensor.device)
+            IDX = 0
+            current_object_lin_vels = self.root_state_tensor[object_indices, 7:10].clone()
+            current_object_ang_vels = self.root_state_tensor[object_indices, 10:].clone()
+            current_object_lin_vel = current_object_lin_vels[IDX].norm().item()
+            current_object_ang_vel = current_object_ang_vels[IDX].norm().item()
+            linear_speeds.append(current_object_lin_vel)
+            angular_speeds.append(current_object_ang_vel)
+            live_plotter.plot(y_data_list=[np.array(linear_speeds), np.array(angular_speeds)])
+
+
             # Phase 1: Do nothing, hand far away
             #   * For NO_GRAVITY_SHAKING: object should stay in place
             #   * For GRAVITY_AND_TABLE: object should fall to table and settle
@@ -815,7 +833,7 @@ class IsaacValidator:
             # Phase 4: Shake hand
             #   * For NO_GRAVITY_SHAKING: shake from this position
             #   * For GRAVITY_AND_TABLE: lift from table first, then shake
-            PHASE_1_LAST_STEP = 30
+            PHASE_1_LAST_STEP = 1000
             PHASE_2_LAST_STEP = PHASE_1_LAST_STEP + 10
             PHASE_3_LAST_STEP = PHASE_2_LAST_STEP + 15
             PHASE_4_LAST_STEP = self.num_sim_steps
