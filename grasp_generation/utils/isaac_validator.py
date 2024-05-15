@@ -121,6 +121,7 @@ class AutoName(Enum):
 
 
 class ValidationType(AutoName):
+    GRAVITY_ONLY = auto()
     NO_GRAVITY_SHAKING = auto()
     GRAVITY_AND_TABLE = auto()
     GRAVITY_AND_TABLE_AND_SHAKING = auto()
@@ -164,7 +165,9 @@ class IsaacValidator:
         ]
 
         # Try to keep num_sim_steps as small as possible to save sim time, but not so short to not lift and shake well
-        if self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
+        if self.validation_type == ValidationType.GRAVITY_ONLY:
+            self.num_sim_steps = 200
+        elif self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
             self.num_sim_steps = 200
         elif self.validation_type == ValidationType.GRAVITY_AND_TABLE:
             self.num_sim_steps = 200
@@ -237,7 +240,7 @@ class IsaacValidator:
 
         if self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
             self.obj_asset_options.disable_gravity = True
-        elif self.validation_type in [ValidationType.GRAVITY_AND_TABLE, ValidationType.GRAVITY_AND_TABLE_AND_SHAKING]:
+        elif self.validation_type in [ValidationType.GRAVITY_AND_TABLE, ValidationType.GRAVITY_AND_TABLE_AND_SHAKING, ValidationType.GRAVITY_ONLY]:
             self.obj_asset_options.disable_gravity = False
         else:
             raise ValueError(f"Unknown validation type: {validation_type}")
@@ -289,7 +292,7 @@ class IsaacValidator:
             add_random_pose_noise=add_random_pose_noise,
         )
 
-        if self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
+        if self.validation_type in [ValidationType.NO_GRAVITY_SHAKING, ValidationType.GRAVITY_ONLY]:
             obj_pose = gymapi.Transform()
 
             self._setup_obj(
@@ -846,9 +849,9 @@ class IsaacValidator:
             #   * For NO_GRAVITY_SHAKING: shake from this position
             #   * For GRAVITY_AND_TABLE and GRAVITY_AND_TABLE_AND_SHAKING: lift from table first, then shake
             PHASE_1_LAST_STEP = (
-                50  # From analysis, takes about 40 steps for ball to settle
+                1  # From analysis, takes about 40 steps for ball to settle
             )
-            PHASE_2_LAST_STEP = PHASE_1_LAST_STEP + 10
+            PHASE_2_LAST_STEP = PHASE_1_LAST_STEP + 1
             PHASE_3_LAST_STEP = PHASE_2_LAST_STEP + 15
             PHASE_4_LAST_STEP = self.num_sim_steps
             assert_equals(PHASE_4_LAST_STEP, self.num_sim_steps)
@@ -1126,7 +1129,14 @@ class IsaacValidator:
         # Set dof pos targets [+x, -x]*N, 0, [+y, -y]*N, 0, [+z, -z]*N
         dist_to_move = 0.03
         N_SHAKES = 1
-        if self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
+        if self.validation_type == ValidationType.GRAVITY_ONLY:
+            targets_sequence = [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ]
+        elif self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
             targets_sequence = [
                 *([[dist_to_move, 0.0, 0.0], [-dist_to_move, 0.0, 0.0]] * N_SHAKES),
                 [0.0, 0.0, 0.0],
@@ -1440,7 +1450,7 @@ class IsaacValidator:
         )
         self.envs.append(env)
 
-        if self.validation_type == ValidationType.NO_GRAVITY_SHAKING:
+        if self.validation_type in [ValidationType.NO_GRAVITY_SHAKING, ValidationType.GRAVITY_ONLY]:
             obj_pose = gymapi.Transform()
 
             self._setup_obj(
