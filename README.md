@@ -280,6 +280,7 @@ Non-exhaustive hints/things to try/install related to above:
 conda create -n dexgraspnet_env python=3.8
 conda activate dexgraspnet_env
 conda install pytorch=1.10 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+pip install numpy==1.23.5  # Compatible with isaacgym (np.float removed in 1.24)
 
 cd thirdparty
 git clone https://github.com/facebookresearch/pytorch3d.git
