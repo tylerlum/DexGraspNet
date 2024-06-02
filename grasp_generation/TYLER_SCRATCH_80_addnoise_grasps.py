@@ -22,15 +22,23 @@ from utils.joint_angle_targets import (
 import torch
 
 # %%
-TRANS_MAX_NOISE = 0.005
-ROT_DEG_MAX_NOISE = 2.5
-JOINT_POS_MAX_NOISE = 0.05
-GRASP_ORIENTATION_DEG_MAX_NOISE = 10
+DEBUG_NO_NOISE = False
+if DEBUG_NO_NOISE:
+    print("WARNING: DEBUG_NO_NOISE is True")
+    TRANS_MAX_NOISE = 0.0
+    ROT_DEG_MAX_NOISE = 0.0
+    JOINT_POS_MAX_NOISE = 0.0
+    GRASP_ORIENTATION_DEG_MAX_NOISE = 0.0
+else:
+    TRANS_MAX_NOISE = 0.005
+    ROT_DEG_MAX_NOISE = 2.5
+    JOINT_POS_MAX_NOISE = 0.05
+    GRASP_ORIENTATION_DEG_MAX_NOISE = 10
 
 # %%
 OUTPUT_PATH = pathlib.Path(
     # "../data/2024-05-27_rotated_v2_only_grasps_noisy_TUNED_NOSHAKE/raw_grasp_config_dicts/"
-    "../data/2024-06-01_DEBUG_WITH_ALBERT/raw_grasp_config_dicts/"
+    "../data/2024-06-01_DEBUG_WITH_ALBERT/NONOISE_raw_grasp_config_dicts/"
 )
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -145,12 +153,12 @@ for path in tqdm(evaled_grasp_config_dicts_paths):
 print(f"Found {len(all_data_paths)} data_paths")
 
 # %%
-MAX_N_OBJECTS = 100
+# MAX_N_OBJECTS = 1000
 # all_data_paths = all_data_paths[:MAX_N_OBJECTS]
-import random
-random.seed(0)
-all_data_paths = random.sample(all_data_paths, MAX_N_OBJECTS)
-print(f"Filtered to {len(all_data_paths)} data_paths")
+# import random
+# random.seed(0)
+# all_data_paths = random.sample(all_data_paths, MAX_N_OBJECTS)
+# print(f"Filtered to {len(all_data_paths)} data_paths")
 
 # %%
 # Step 1: Get obj_to_all_grasps
