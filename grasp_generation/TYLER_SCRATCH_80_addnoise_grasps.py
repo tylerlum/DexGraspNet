@@ -38,7 +38,7 @@ else:
 # %%
 OUTPUT_PATH = pathlib.Path(
     # "../data/2024-05-27_rotated_v2_only_grasps_noisy_TUNED_NOSHAKE/raw_grasp_config_dicts/"
-    "../data/2024-06-01_DEBUG_WITH_ALBERT/NONOISE_raw_grasp_config_dicts/"
+    "../data/2024-06-02_NOISY_GRASPS/raw_grasp_config_dicts/"
 )
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -129,7 +129,22 @@ hand_model = HandModel(hand_model_type=hand_model_type, device=device)
 
 # %%
 ######### CREATE NEW DATASET ##################
-data_path = pathlib.Path("/juno/u/tylerlum/github_repos/DexGraspNet/data")
+# data_path = pathlib.Path("/juno/u/tylerlum/github_repos/DexGraspNet/data")
+# assert data_path.exists()
+# experiment_paths = sorted(list(data_path.glob("2024-05-06_rotated_stable_grasps_*")) + list(data_path.glob("2024-05-26_rotated_v2_only_grasps_*")))
+# evaled_grasp_config_dicts_paths = [
+#     experiment_path / "NEW_evaled_grasp_config_dicts" for experiment_path in experiment_paths
+# ]
+# num_exist = 0
+# for p in evaled_grasp_config_dicts_paths:
+#     if not p.exists():
+#         print(f"{p} does not exist")
+#     else:
+#         num_exist += 1
+# print(f"Found {len(evaled_grasp_config_dicts_paths)} evaled_grasp_config_dicts_paths")
+# print(f"Found {num_exist} existing evaled_grasp_config_dicts_paths")
+
+data_path = pathlib.Path("/juno/u/tylerlum/github_repos/nerf_grasping/2024-06-01_ALBERT_TO_TYLER/raw_grasp_config_dicts/")
 assert data_path.exists()
 experiment_paths = sorted(list(data_path.glob("2024-05-06_rotated_stable_grasps_*")) + list(data_path.glob("2024-05-26_rotated_v2_only_grasps_*")))
 evaled_grasp_config_dicts_paths = [
@@ -299,6 +314,7 @@ def add_noise(
     new_z_dirs_torch = (
         torch.from_numpy(new_z_dirs).float().cuda().reshape(N_noisy * B, N_FINGERS, 3)
     )
+    new_z_dirs_torch = new_z_dirs_torch / new_z_dirs_torch.norm(dim=-1, keepdim=True)
 
     # Math to get x_dirs, y_dirs
     (center_to_right_dirs, center_to_tip_dirs) = compute_fingertip_dirs(
@@ -306,7 +322,7 @@ def add_noise(
         hand_model=hand_model,
     )
     option_1_ok = (
-        torch.cross(center_to_tip_dirs, new_z_dirs_torch).norm(dim=-1, keepdim=True) > 0
+        torch.cross(center_to_tip_dirs, new_z_dirs_torch).norm(dim=-1, keepdim=True) > 1e-4
     )
 
     y_dirs = torch.where(
@@ -329,7 +345,7 @@ def add_noise(
         torch.stack([x_dirs, y_dirs, new_z_dirs_torch], dim=-1).cpu().numpy()
     )
     # Make sure y and z are orthogonal
-    assert (torch.einsum("...l,...l->...", y_dirs, new_z_dirs_torch).abs().max() < 1e-4).all(), (
+    assert (torch.einsum("...l,...l->...", y_dirs, new_z_dirs_torch).abs().max() < 1e-3).all(), (
         f"y_dirs = {y_dirs}",
         f"new_z_dirs_torch = {new_z_dirs_torch}",
         f"torch.einsum('...l,...l->...', y_dirs, new_z_dirs_torch).abs().max() = {torch.einsum('...l,...l->...', y_dirs, new_z_dirs_torch).abs().max()}"
@@ -369,7 +385,7 @@ print(f"diff: {diff}")
 
 # %%
 # hand_model
-object_idx = 4
+object_idx = 2
 noise_idx = 1
 
 input_hand_pose = hand_config_to_pose(
@@ -388,13 +404,22 @@ output_plotly = hand_model.get_plotly_data(i=test_n_noisy * object_idx + noise_i
 fig = go.Figure(data=input_plotly + output_plotly)
 fig.show()
 
+# %%
+num_good_grasps = 0
+for good_grasps_dict in obj_to_good_grasps.values():
+    num_good_grasps += good_grasps_dict['trans'].shape[0]
+num_all_grasps = 0
+for all_grasps_dict in obj_to_all_grasps.values():
+    num_all_grasps += all_grasps_dict['trans'].shape[0]
+
+print(f"num_good_grasps/num_all_grasps: {num_good_grasps}/{num_all_grasps} = {num_good_grasps/num_all_grasps:.2f}")
 
 # %%
 # Step 3: Get obj_to_noisy_good_grasps, obj_to_noisy_other_grasps
 obj_to_noisy_good_grasps = defaultdict(list)
 obj_to_noisy_other_grasps = defaultdict(list)
 N_noisy = 10
-N_other = 0
+N_other = 2
 for obj, good_grasps_dict in tqdm(obj_to_good_grasps.items()):
     # Add noise
     noisy_good_data_dict = add_noise(
