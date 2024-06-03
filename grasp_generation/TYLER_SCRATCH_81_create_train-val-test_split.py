@@ -114,11 +114,11 @@ UNIQUE_OBJECT_CODES = list(set(FINAL_OBJECT_CODE_TO_SCALES.keys()))
 print(f"Unique object codes: {len(UNIQUE_OBJECT_CODES)}")
 
 # %%
-val_frac, test_frac = 0.1, 0.05
+val_frac, test_frac = 0.05, 0.025
 train_frac = 1 - val_frac - test_frac
 
 TRAIN_OBJECT_CODES, TEST_OBJECT_CODES = train_test_split(
-    list(UNIQUE_OBJECT_CODES), test_size=test_frac, random_state=42
+    list(UNIQUE_OBJECT_CODES), test_size=val_frac + test_frac, random_state=42
 )
 VAL_OBJECT_CODES, TEST_OBJECT_CODES = train_test_split(
     TEST_OBJECT_CODES, test_size=test_frac / (val_frac + test_frac), random_state=42
@@ -170,7 +170,7 @@ print(f"Test: {len(TEST_OBJECT_CODE_AND_SCALE_LIST)}")
 
 # %%
 OUTPUT_DIR = pathlib.Path(
-    "/juno/u/tylerlum/github_repos/DexGraspNet/2024-06-01_train_val_test_splits"
+    "/juno/u/tylerlum/github_repos/DexGraspNet/2024-06-02_NEW_train_val_test_splits"
 )
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 print(f"Created {OUTPUT_DIR}")
