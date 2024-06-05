@@ -104,11 +104,22 @@ def main() -> None:
             label=method_names,
         )
         bins_labels(bins, fontsize=20)
-        plt.title(f'Histogram of {label.replace("_", " ").capitalize()}')
-        plt.xlabel("Success Rate")
+        title_label = label.replace("_", " ").title()
+        if "Eval" in title_label:
+            title_label = r"$y_{PGS}$"
+            xlabel = r'Per Object Mean $y_{PGS}$'
+        elif "Simulation" in title_label:
+            title_label = r"$y_{pick}$"
+            xlabel = r'Per Object Mean $y_{pick}$'
+        elif "Penetration" in title_label:
+            title_label = r"$y_{coll}$"
+            xlabel = r'Per Object Mean $y_{coll}$'
+        plt.title(f'Histogram of Per-Object {title_label} Across 5 Generated Grasps')
+        plt.xlabel(xlabel)
         plt.ylabel("Frequency")
         plt.legend()
         plt.grid(axis="y")
+        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
         plt.gca().xaxis.set_major_formatter(FuncFormatter(format_func)) # 1 decimal place
 
         img_filename = f"{label}_histogram.png"
