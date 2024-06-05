@@ -15,93 +15,80 @@ sys.path.append(os.path.realpath("."))
 
 
 class ArgParser(Tap):
-    evaled_grasp_config_dicts_path: pathlib.Path = pathlib.Path(
-        "../data/evaled_grasp_config_dicts"
-    )
-    experiment_name: str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    """
+    Assumes the following directory structure:
+    <experiment_dir>
+    |
+    |--- <method 1>
+    |   |--- evaled_grasp_config_dicts
+    |       |--- <object code 1>.npy
+    |       |--- <object code 2>.npy
+    |            ...
+    |
+    |--- <method 2>
+         ...
+    """
+
+    experiment_dir: pathlib.Path  # Path to the experiment directory
 
 
 def main() -> None:
     args = ArgParser().parse_args()
-    assert (
-        args.evaled_grasp_config_dicts_path.exists()
-    ), f"Path does not exist: {args.evaled_grasp_config_dicts_path}"
+    assert args.experiment_dir.exists(), f"Path does not exist: {args.experiment_dir}"
 
-    # Get all object codes
-    npy_files = sorted(list(args.evaled_grasp_config_dicts_path.glob("*.npy")))[:30]
-    evaled_grasp_config_dicts = [
-        np.load(path, allow_pickle=True).item()
-        for path in tqdm(npy_files, desc="Loading grasp config dicts")
-    ]
+    method_paths = sorted([d for d in args.experiment_dir.iterdir() if d.is_dir()])
+    method_names = [d.name for d in method_paths]
 
-    # Get success rate for each object
-    obj_to_success_rate = {
-        npy_file.stem: evaled_grasp_config_dict["passed_eval"].mean()
-        for npy_file, evaled_grasp_config_dict in zip(
-            npy_files, evaled_grasp_config_dicts
-        )
-    }
-    obj_to_num_successes = {
-        npy_file.stem: evaled_grasp_config_dict["passed_eval"].sum()
-        for npy_file, evaled_grasp_config_dict in zip(
-            npy_files, evaled_grasp_config_dicts
-        )
-    }
-    print(f"obj_to_success_rate: {obj_to_success_rate}")
-    print(f"obj_to_num_successes: {obj_to_num_successes}")
+    method_name_to_dict = {}
+    for method_name, method_path in zip(method_names, method_paths):
+        evaled_grasp_config_dicts_path = method_path / "evaled_grasp_config_dicts"
+        if not evaled_grasp_config_dicts_path.exists():
+            print(f"Skipping method {method_name} because {evaled_grasp_config_dicts_path} does not exist")
 
-    # Get total success rate
-    total_success_rate = np.mean(list(obj_to_success_rate.values()))
-    print(f"Total success rate: {total_success_rate}")
+        evaled_grasp_config_dict_paths = sorted(list(evaled_grasp_config_dicts_path.glob("*.npy")))
+        evaled_grasp_config_dicts = [np.load(path, allow_pickle=True).item() for path in evaled_grasp_config_dict_paths]
+        print(f"For method {method_name}: Found {len(evaled_grasp_config_dicts)} evaled_grasp_config_dicts in {evaled_grasp_config_dicts_path}")
 
-    df = pd.DataFrame(
-        {
-            "object": list(obj_to_success_rate.keys()),
-            "success_rate": list(obj_to_success_rate.values()),
-            "num_successes": list(obj_to_num_successes.values()),
+        passed_eval_means = [
+            evaled_grasp_config_dict["passed_eval"].mean() for evaled_grasp_config_dict in evaled_grasp_config_dicts
+        ]
+        passed_simulation_means = [
+            evaled_grasp_config_dict["passed_simulation"].mean() for evaled_grasp_config_dict in evaled_grasp_config_dicts
+        ]
+        passed_penetration_means = [
+            evaled_grasp_config_dict["passed_new_penetration_test"].mean() for evaled_grasp_config_dict in evaled_grasp_config_dicts
+        ]
+        method_name_to_dict[method_name] = {
+            "passed_eval_means": passed_eval_means,
+            "passed_simulation_means": passed_simulation_means,
+            "passed_penetration_means": passed_penetration_means,
         }
-    )
-    # Success rate for each object
-    fig, ax = plt.subplots(figsize=(12, 8))
-    ax.bar(df["object"], df["success_rate"], color="green", edgecolor="black")
-    ax.set_xlabel("Object")
-    ax.set_ylabel("Success Rate")
-    ax.set_title("Success Rate for Each Object")
-    plt.xticks(rotation=90)
-    plt.tight_layout()
 
-    img_filename = f"success_rate_{args.experiment_name}.png"
-    plt.savefig(img_filename, dpi=300)
-    print(f"Saved image to {img_filename}")
+    labels = ["passed_eval_means", "passed_simulation_means", "passed_penetration_means"]
+    method_colors = ["blue", "orange", "green"]
+    
+    for label in labels:
+        plt.figure(figsize=(14, 10))
+        plt.rcParams.update({'font.size': 22})
+        for method, color in zip(method_name_to_dict.keys(), method_colors):
+            data = method_name_to_dict[method][label]
+            plt.hist(data, bins=np.linspace(0, 1, 11), alpha=0.7, rwidth=0.85, color=color, edgecolor='black', label=method)
+        
+        plt.title(f'Histogram of {label.replace("_", " ").capitalize()}')
+        plt.xlabel('Success Rate')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.grid(axis='y')
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        # plt.yticks(np.arange(0, max(counts) + 50, 50))
+        
+        img_filename = f"{label}_histogram.png"
+        plt.savefig(img_filename, dpi=300)
+        print(f"Saved image to {img_filename}")
 
-    csv_filename = f"success_rate_{args.experiment_name}.csv"
-    df.to_csv(csv_filename, index=False)
-    print(f"Saved CSV to {csv_filename}")
 
-    # Success rate histogram
-    fig, ax = plt.subplots(figsize=(12, 8))
-    counts, bins, patches = ax.hist(
-        df["success_rate"],
-        bins=np.linspace(0, 1, 11),
-        alpha=0.7,
-        rwidth=0.85,
-        color="blue",
-        edgecolor="black",
-    )
-    ax.set_title("Success Rate Histogram")
-    ax.set_xlabel("Success Rate")
-    ax.set_ylabel("Frequency")
-    ax.grid()
-    ax.set_xlim(left=0, right=1)
-    X_DELTA = 0.1
-    ax.set_xticks(np.arange(0, 1 + X_DELTA, X_DELTA))
-
-    Y_DELTA = 50
-    ax.set_yticks(np.arange(0, max(counts) + Y_DELTA, Y_DELTA))
-    img2_filename = f"success_rate_hist_{args.experiment_name}.png"
-    plt.savefig(img2_filename, dpi=300)
-    print(f"Saved image to {img2_filename}")
-
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
