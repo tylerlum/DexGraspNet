@@ -81,29 +81,20 @@ def main() -> None:
         "passed_simulation_means",
         "passed_penetration_means",
     ]
-    method_colors = ["blue", "orange", "green"]
-
     for label in labels:
         plt.figure(figsize=(14, 10))
         plt.rcParams.update({"font.size": 22})
-        for method, color in zip(method_name_to_dict.keys(), method_colors):
-            data = method_name_to_dict[method][label]
-            counts, bins, patches = plt.hist(
-                data,
-                bins=np.linspace(0, 1, 21),
-                alpha=0.5,
-                rwidth=0.85,
-                color=color,
-                edgecolor="black",
-                label=method,
-            )
 
+        plt.hist(
+            [method_name_to_dict[method_name][label] for method_name in method_names],
+            bins=20,
+            label=method_names,
+        )
         plt.title(f'Histogram of {label.replace("_", " ").capitalize()}')
         plt.xlabel("Success Rate")
         plt.ylabel("Frequency")
         plt.legend()
         plt.grid(axis="y")
-        plt.xticks(np.arange(0, 1.05, 0.05))
 
         img_filename = f"{label}_histogram.png"
         plt.savefig(img_filename, dpi=300)
