@@ -97,7 +97,7 @@ def main() -> None:
         plt.figure(figsize=(14, 10))
         plt.rcParams.update({"font.size": 22})
 
-        bins = np.linspace(0, 1, 11)
+        bins = np.linspace(0, 1, 6)
         plt.hist(
             [method_name_to_dict[method_name][label] for method_name in ["frogger", "dexdiffuser", "dexdiffuser_gg"]],
             bins=bins,
