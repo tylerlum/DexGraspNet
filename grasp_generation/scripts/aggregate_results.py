@@ -109,7 +109,6 @@ def main() -> None:
         plt.ylabel("Frequency")
         plt.legend()
         plt.grid(axis="y")
-        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
         plt.gca().xaxis.set_major_formatter(FuncFormatter(format_func)) # 1 decimal place
 
         img_filename = f"{label}_histogram.png"
