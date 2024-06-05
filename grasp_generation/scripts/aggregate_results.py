@@ -32,6 +32,14 @@ class ArgParser(Tap):
     experiment_dir: pathlib.Path  # Path to the experiment directory
 
 
+def bins_labels(bins, **kwargs):
+    bin_w = (max(bins) - min(bins)) / (len(bins) - 1)
+    tick_locations = np.linspace(min(bins) + bin_w / 2, max(bins) - bin_w / 2, len(bins))
+    breakpoint()
+    plt.xticks(tick_locations, bins, **kwargs)
+    plt.xlim(bins[0], bins[-1])
+
+
 def main() -> None:
     args = ArgParser().parse_args()
     assert args.experiment_dir.exists(), f"Path does not exist: {args.experiment_dir}"
@@ -85,11 +93,13 @@ def main() -> None:
         plt.figure(figsize=(14, 10))
         plt.rcParams.update({"font.size": 22})
 
+        bins = np.linspace(0, 1, 11)
         plt.hist(
             [method_name_to_dict[method_name][label] for method_name in method_names],
-            bins=20,
+            bins=bins,
             label=method_names,
         )
+        bins_labels(bins, fontsize=20)
         plt.title(f'Histogram of {label.replace("_", " ").capitalize()}')
         plt.xlabel("Success Rate")
         plt.ylabel("Frequency")
