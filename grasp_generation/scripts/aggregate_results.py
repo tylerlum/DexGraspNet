@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from matplotlib.ticker import StrMethodFormatter
+
 
 from tap import Tap
 import os
@@ -34,8 +36,7 @@ class ArgParser(Tap):
 
 def bins_labels(bins, **kwargs):
     bin_w = (max(bins) - min(bins)) / (len(bins) - 1)
-    tick_locations = np.linspace(min(bins) + bin_w / 2, max(bins) - bin_w / 2, len(bins))
-    breakpoint()
+    tick_locations = np.round(np.linspace(min(bins) + bin_w / 2, max(bins) - bin_w / 2, len(bins)), 1)
     plt.xticks(tick_locations, bins, **kwargs)
     plt.xlim(bins[0], bins[-1])
 
@@ -105,6 +106,7 @@ def main() -> None:
         plt.ylabel("Frequency")
         plt.legend()
         plt.grid(axis="y")
+        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
 
         img_filename = f"{label}_histogram.png"
         plt.savefig(img_filename, dpi=300)
