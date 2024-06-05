@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from matplotlib.ticker import StrMethodFormatter
-
+from matplotlib.ticker import FuncFormatter, StrMethodFormatter
 
 from tap import Tap
 import os
@@ -39,6 +38,10 @@ def bins_labels(bins, **kwargs):
     tick_locations = np.round(np.linspace(min(bins) + bin_w / 2, max(bins) - bin_w / 2, len(bins)), 1)
     plt.xticks(tick_locations, bins, **kwargs)
     plt.xlim(bins[0], bins[-1])
+
+
+def format_func(value, tick_number):
+    return f'{value:.1f}'
 
 
 def main() -> None:
@@ -107,6 +110,7 @@ def main() -> None:
         plt.legend()
         plt.grid(axis="y")
         plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(format_func)) # 1 decimal place
 
         img_filename = f"{label}_histogram.png"
         plt.savefig(img_filename, dpi=300)
@@ -115,3 +119,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
