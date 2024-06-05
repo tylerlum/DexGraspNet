@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter, StrMethodFormatter
@@ -13,6 +14,9 @@ from typing import Optional
 from datetime import datetime
 
 sys.path.append(os.path.realpath("."))
+
+# Apply seaborn style
+sns.set(style="darkgrid")
 
 
 class ArgParser(Tap):
@@ -106,7 +110,7 @@ def main() -> None:
         "passed_penetration_means",
     ]
     for label in ["passed_eval_means"]:
-        plt.figure(figsize=(14, 10))
+        plt.figure(figsize=(24, 4))  # Adjusted for wide aspect ratio
         plt.rcParams.update({"font.size": 22})
 
         bins = np.linspace(0, 1, 11)
@@ -117,6 +121,7 @@ def main() -> None:
             ],
             bins=bins,
             label=["frogger", "dexdiffuser", "get a grip (ours)"],
+            edgecolor='black'
         )
         bins_labels(bins, fontsize=20)
         title_label = label.replace("_", " ").title()
@@ -129,10 +134,11 @@ def main() -> None:
             FuncFormatter(format_func)
         )  # 1 decimal place
 
-        img_filename = f"success_rates_histogram.png"
-        plt.savefig(img_filename, dpi=300)
+        img_filename = f"success_rates_histogram.pdf"
+        plt.savefig(img_filename, dpi=300, bbox_inches='tight')
         print(f"Saved image to {img_filename}")
 
 
 if __name__ == "__main__":
     main()
+
