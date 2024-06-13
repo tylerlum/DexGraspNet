@@ -323,10 +323,15 @@ def create_config_dict_fig(
         title += f" | {predicted_score_str}"
 
     # yup
+    # yup_camera = dict(
+    #     center=dict(x=0, y=0, z=0),
+    #     up=dict(x=0, y=1, z=0),
+    #     eye=dict(x=1.0, y=1.0, z=0.0)
+    # )
     yup_camera = dict(
-        up=dict(x=0, y=1, z=0),
+        up=dict(x=0, y=0, z=1),
         center=dict(x=0, y=0, z=0),
-        eye=dict(x=1.0, y=1.0, z=0.0)
+        eye=dict(x=2.5, y=0.0, z=0.0)
     )
 
     fig.update_layout(
@@ -339,4 +344,34 @@ def create_config_dict_fig(
         ),
         scene_camera=yup_camera,
     )
+
+    fig.update_layout(scene=dict(
+        xaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        ),
+        yaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        ),
+        zaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        )
+    ))
+
+    fig.write_image("DGN_contact_candidates_surface_points.pdf")
+
     return fig

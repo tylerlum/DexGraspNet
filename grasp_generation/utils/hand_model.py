@@ -911,7 +911,7 @@ class HandModel:
                     y=contact_candidates[:, 1],
                     z=contact_candidates[:, 2],
                     mode="markers",
-                    marker=dict(color="blue", size=5),
+                    marker=dict(color="blue", size=10),
                     name="contact candidates",
                 )
             )
@@ -925,7 +925,7 @@ class HandModel:
                     y=surface_points[:, 1],
                     z=surface_points[:, 2],
                     mode="markers",
-                    marker=dict(color="green", size=2),
+                    marker=dict(color="green", size=5),
                     name="surface points",
                 )
             )
