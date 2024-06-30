@@ -281,6 +281,7 @@ conda create -n dexgraspnet_env python=3.8
 conda activate dexgraspnet_env
 conda install pytorch=1.10 torchvision torchaudio cudatoolkit=11.3 -c pytorch
 pip install numpy==1.23.5  # Compatible with isaacgym (np.float removed in 1.24)
+pip install setuptools==69.5.1  # Might need this https://github.com/aws-neuron/aws-neuron-sdk/issues/893 if you get ImportError: cannot import name 'packaging' from 'pkg_resources' 
 
 cd thirdparty
 git clone https://github.com/facebookresearch/pytorch3d.git
