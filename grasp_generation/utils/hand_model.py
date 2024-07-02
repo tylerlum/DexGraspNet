@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 import pytorch3d.structures
 import pytorch3d.ops
 import trimesh as tm
-from torchsdf import index_vertices_by_faces, compute_sdf
+from kaolin.metrics.trianglemesh import CUSTOM_index_vertices_by_faces as index_vertices_by_faces, compute_sdf
 
 import transforms3d
 from urdf_parser_py.urdf import Robot, Box, Sphere

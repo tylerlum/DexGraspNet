@@ -13,7 +13,7 @@ import pytorch3d.ops
 import numpy as np
 from typing import Optional, Tuple
 
-from torchsdf import index_vertices_by_faces, compute_sdf
+from kaolin.metrics.trianglemesh import CUSTOM_index_vertices_by_faces as index_vertices_by_faces, compute_sdf
 
 
 class ObjectModel:
