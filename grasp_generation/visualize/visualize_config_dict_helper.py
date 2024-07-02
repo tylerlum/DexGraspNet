@@ -32,9 +32,9 @@ def get_hand_config_dict_plotly_data_list(
             opacity=0.5,
             color="lightblue",
             with_contact_points=False,
-            with_contact_candidates=True,
-            with_surface_points=True,
-            with_penetration_keypoints=True,
+            with_contact_candidates=False,
+            with_surface_points=False,
+            with_penetration_keypoints=False,
         )
     else:
         hand_start_plotly = []
@@ -45,8 +45,8 @@ def get_hand_config_dict_plotly_data_list(
         opacity=1,
         color="lightblue",
         with_contact_points=False,
-        with_contact_candidates=True,
-        with_surface_points=True,
+        with_contact_candidates=False,
+        with_surface_points=False,
         with_penetration_keypoints=False,
     )
 
@@ -187,9 +187,10 @@ def create_config_dict_fig(
     idx_to_visualize: int,
     concise_title: bool = False,
 ) -> go.Figure:
+    orig_title = str(title)
     if object_model is not None:
         object_plotly = object_model.get_plotly_data(
-            i=0, color="lightgreen", opacity=0.5, with_surface_points=True, with_table=True
+            i=0, color="lightgreen", opacity=1.0, with_surface_points=False, with_table=True
         )
     else:
         object_plotly = []
@@ -219,7 +220,8 @@ def create_config_dict_fig(
     hand_config_dict_plotly_data_list = get_hand_config_dict_plotly_data_list(
         hand_model=hand_model,
         hand_pose=hand_pose,
-        hand_pose_start=hand_pose_start,
+        # hand_pose_start=hand_pose_start,
+        hand_pose_start=None,
     )
 
     # grasp config dict
@@ -257,7 +259,7 @@ def create_config_dict_fig(
             [f"{key}: {value}" for key, value in energy_terms_to_values.items()]
         )
         energy_str = f"Energy: {energy}\n  {energy_terms_str}"
-        fig.add_annotation(text=energy_str, x=0.5, y=0.1, xref="paper", yref="paper")
+        # fig.add_annotation(text=energy_str, x=0.5, y=0.1, xref="paper", yref="paper")
 
     # passed_eval
     if "passed_eval" in config_dict:
@@ -265,11 +267,11 @@ def create_config_dict_fig(
         passed_eval_str = (
             f"Passed eval: {passed_eval}" if not concise_title else f"E: {passed_eval}"
         )
-        fig.add_annotation(
-            text=passed_eval_str, x=0.5, y=0.05, xref="paper", yref="paper"
-        )
-        # For some reason, annotations not showing up in the multi fig plot
-        title += f" | {passed_eval_str}"
+        # fig.add_annotation(
+        #     text=passed_eval_str, x=0.5, y=0.05, xref="paper", yref="paper"
+        # )
+        # # For some reason, annotations not showing up in the multi fig plot
+        # title += f" | {passed_eval_str}"
 
     if "passed_penetration_threshold" in config_dict:
         passed_penetration_threshold = config_dict["passed_penetration_threshold"][
@@ -280,26 +282,26 @@ def create_config_dict_fig(
             if not concise_title
             else f"P: {passed_penetration_threshold}"
         )
-        fig.add_annotation(
-            text=passed_penetration_threshold_str,
-            x=0.5,
-            y=0.1,
-            xref="paper",
-            yref="paper",
-        )
-        # For some reason, annotations not showing up in the multi fig plot
-        title += f" | {passed_penetration_threshold_str}"
+        # fig.add_annotation(
+        #     text=passed_penetration_threshold_str,
+        #     x=0.5,
+        #     y=0.1,
+        #     xref="paper",
+        #     yref="paper",
+        # )
+        # # For some reason, annotations not showing up in the multi fig plot
+        # title += f" | {passed_penetration_threshold_str}"
 
     if "penetration" in config_dict:
         penetration = config_dict["penetration"][idx_to_visualize]
         penetration_str = (
             f"Penetration: {round(penetration, 5)}" if not concise_title else ""
         )
-        fig.add_annotation(
-            text=penetration_str, x=0.5, y=0.15, xref="paper", yref="paper"
-        )
-        # For some reason, annotations not showing up in the multi fig plot
-        title += f" | {penetration_str}"
+        # fig.add_annotation(
+        #     text=penetration_str, x=0.5, y=0.15, xref="paper", yref="paper"
+        # )
+        # # For some reason, annotations not showing up in the multi fig plot
+        # title += f" | {penetration_str}"
 
     if "passed_simulation" in config_dict:
         passed_simulation = config_dict["passed_simulation"][idx_to_visualize]
@@ -308,29 +310,29 @@ def create_config_dict_fig(
             if not concise_title
             else f"S: {passed_simulation}"
         )
-        fig.add_annotation(
-            text=passed_simulation_str, x=0.5, y=0.2, xref="paper", yref="paper"
-        )
-        # For some reason, annotations not showing up in the multi fig plot
-        title += f" | {passed_simulation_str}"
+        # fig.add_annotation(
+        #     text=passed_simulation_str, x=0.5, y=0.2, xref="paper", yref="paper"
+        # )
+        # # For some reason, annotations not showing up in the multi fig plot
+        # title += f" | {passed_simulation_str}"
 
     # loss
     if "loss" in config_dict:
         loss = round(config_dict["loss"][idx_to_visualize], 3)
         predicted_score = 1 - loss
         predicted_score_str = f"predicted: {predicted_score}"
-        fig.add_annotation(text=predicted_score_str, x=0.5, y=0.25, xref="paper", yref="paper")
-        title += f" | {predicted_score_str}"
+        # fig.add_annotation(text=predicted_score_str, x=0.5, y=0.25, xref="paper", yref="paper")
+        # title += f" | {predicted_score_str}"
 
     # yup
     yup_camera = dict(
         up=dict(x=0, y=1, z=0),
         center=dict(x=0, y=0, z=0),
-        eye=dict(x=1.0, y=1.0, z=0.0)
+        eye=dict(x=2.0, y=0.4, z=0.0)
     )
 
     fig.update_layout(
-        title=title,
+        # title=title,
         scene=dict(
             xaxis=dict(title="X"),
             yaxis=dict(title="Y"),
@@ -339,4 +341,33 @@ def create_config_dict_fig(
         ),
         scene_camera=yup_camera,
     )
+    fig.update_layout(scene=dict(
+        xaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        ),
+        yaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        ),
+        zaxis=dict(
+            showbackground=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            showticklabels=False,
+            title=''
+        )
+    ))
+
+    fig.write_image(f"{orig_title}.pdf")
+
     return fig
