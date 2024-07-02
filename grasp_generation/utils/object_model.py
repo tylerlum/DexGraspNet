@@ -268,7 +268,7 @@ class ObjectModel:
                     i=table_mesh.faces[:, 0],
                     j=table_mesh.faces[:, 1],
                     k=table_mesh.faces[:, 2],
-                    color=color,
+                    color="#DEB887",
                     opacity=opacity,
                     name="table",
                 )
@@ -362,9 +362,10 @@ class ObjectModel:
         bounds = self.get_bounds(scaled=True)
         bounds = bounds[idx].detach().cpu().numpy()
         assert bounds.shape == (2, 3)
-        SCALE_FACTOR = 2
-        W, H = bounds[1, 0] - bounds[0, 0], bounds[1, 2] - bounds[0, 2]
-        W, H = SCALE_FACTOR * W, SCALE_FACTOR * H
+        # SCALE_FACTOR = 4
+        # W, H = bounds[1, 0] - bounds[0, 0], bounds[1, 2] - bounds[0, 2]
+        # W, H = SCALE_FACTOR * W, SCALE_FACTOR * H
+        W, H = 0.4, 0.4
 
         table_parallel_2 = np.cross(table_normal, table_parallel)
         corner1 = table_pos + W / 2 * table_parallel + H / 2 * table_parallel_2
